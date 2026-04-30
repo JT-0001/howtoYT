@@ -11,7 +11,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { BookType, Calendar, ChartNoAxesColumn, GalleryThumbnails, Gauge, Home, ImageIcon, Inbox, Lightbulb, Search, Settings, User2 } from "lucide-react"
+import { Activity, BarChart3, BookType, Calendar, ChartNoAxesColumn, GalleryThumbnails, Gauge, Home, ImageIcon, Inbox, Lightbulb, MessageSquare, Search, Settings, User2 } from "lucide-react"
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
@@ -36,7 +36,7 @@ const items = [
         url: "/trending-keywords",
         icon: BookType,
     },
-  
+
     {
         title: "Outlier",
         url: "/outlier",
@@ -48,10 +48,21 @@ const items = [
         url: "/ai-content-generator",
         icon: Lightbulb,
     },
+
     {
-        title: "Billing",
-        url: "/billing",
-        icon: Settings,
+        title: "Competitior Analyzer",
+        url: "/competitor-analyze",
+        icon: BarChart3,
+    },
+    {
+        title: "Subscriber Analyzer",
+        url: "/subscriber-analyze",
+        icon: Activity,
+    },
+    {
+        title: "Comment Analyzer",
+        url: "/comment-analyzer",
+        icon: MessageSquare,
     },
     {
         title: "Profile",

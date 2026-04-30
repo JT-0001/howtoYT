@@ -1,5 +1,13 @@
+import { db } from "@/configs/db";
+import { TrendingKeywordsTable } from "@/configs/schema";
+import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -10,7 +18,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Step 1: Fetch YouTube video titles
+    const user = await currentUser();
+
     const youtubeResponse = await axios.get(
       "https://www.googleapis.com/youtube/v3/search",
       {
@@ -18,7 +27,7 @@ export async function GET(req: NextRequest) {
           key: process.env.YOUTUBE_API_KEY,
           part: "snippet",
           q: query,
-          maxResults: 20,
+          maxResults: 9,
         },
       }
     );
@@ -27,66 +36,57 @@ export async function GET(req: NextRequest) {
       (item: any) => item.snippet.title
     );
 
-    // Step 2: Extract keywords with weighted scoring
-    const keywordsMap: Record<string, { score: number; related: Set<string> }> = {};
+    const aiResponse = await openai.chat.completions.create({
+      model: "gpt-5-nano",
+      messages: [
+        {
+          role: "user",
+          content: `
+Generate SEO keywords from:
+${JSON.stringify(titles)}
 
-    titles.forEach((title: string) => {
-      const cleanTitle = title.toLowerCase().replace(/[^a-z0-9 ]/g, "");
-      const words = cleanTitle.split(" ").filter(w => w.length > 3);
-
-      words.forEach((word, index) => {
-        const weight = (words.length - index) / words.length; // higher for earlier words
-
-        if (!keywordsMap[word]) keywordsMap[word] = { score: 0, related: new Set() };
-        keywordsMap[word].score += weight;
-
-        // Add related words
-        words.forEach((w) => {
-          if (w !== word) keywordsMap[word].related.add(w);
-        });
-      });
-
-      // Step 2b: Add bigrams
-      for (let i = 0; i < words.length - 1; i++) {
-        const bigram = words[i] + " " + words[i + 1];
-        if (!keywordsMap[bigram]) keywordsMap[bigram] = { score: 0, related: new Set() };
-        keywordsMap[bigram].score += 1; // bigrams get simpler weight
-
-        // related words for bigram
-        words.forEach((w) => {
-          if (w !== words[i] && w !== words[i + 1]) keywordsMap[bigram].related.add(w);
-        });
-      }
+Return JSON:
+{
+  "main_keyword": "${query}",
+  "keywords": [
+    {
+      "keyword": "",
+      "score": 0,
+      "related_queries": []
+    }
+  ]
+}
+          `,
+        },
+      ],
     });
 
-    // Step 3: Normalize scores to 1-100 range
-    const keywordsArray = Object.entries(keywordsMap).map(([keyword, data]) => ({
-      keyword,
-      rawScore: data.score,
-      related_queries: Array.from(data.related).slice(0, 5),
-    }));
+    let raw = aiResponse.choices[0].message.content || "";
+    raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    const maxScore = Math.max(...keywordsArray.map(k => k.rawScore));
-    const minScore = Math.min(...keywordsArray.map(k => k.rawScore));
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = { main_keyword: query, keywords: [] };
+    }
 
-    const keywords = keywordsArray
-      .sort((a, b) => b.rawScore - a.rawScore)
-      .slice(0, 10)
-      .map(k => ({
-        keyword: k.keyword,
-        score: Math.round(((k.rawScore - minScore) / (maxScore - minScore)) * 99 + 1), // scaled 1-100
-        related_queries: k.related_queries
-      }));
+    // ✅ SAVE TO DB (FIXED)
+    await db.insert(TrendingKeywordsTable).values({
+      userInput: query,
+      keywordsData: parsed,
+      userEmail: user?.primaryEmailAddress?.emailAddress,
+      createdOn: new Date().toISOString(),
+    });
 
-    const response = {
-      main_keyword: query,
-      keywords,
+    return NextResponse.json({
+      main_keyword: parsed.main_keyword,
+      keywords: parsed.keywords,
       titles,
-    };
+    });
 
-    return NextResponse.json(response);
   } catch (err: any) {
-    console.error(err);
+    console.error("API ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Something went wrong" },
       { status: 500 }

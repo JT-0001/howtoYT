@@ -82,6 +82,7 @@ export default function Home() {
             { title: "Outlier Detection", desc: "Identify videos performing unusually well or poorly." },
             { title: "YouTube Content Generator", desc: "Generate viral video scripts and content ideas." },
             { title: "Trending Keywords", desc: "Stay ahead with real-time YouTube keyword trends." },
+            { title: "Competitor Analysis", desc: "Analyze competitor channels for insights and strategies." },
             { title: "Optimize Performance", desc: "Get AI suggestions to improve titles, tags, and more." },
           ].map((feature, i) => (
             <a key={i} className="group flex flex-col justify-center hover:bg-gray-50 rounded-xl p-4 md:p-7 dark:hover:bg-neutral-800" href="#">

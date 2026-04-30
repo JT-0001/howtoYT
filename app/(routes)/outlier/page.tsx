@@ -34,7 +34,7 @@ export type VideoInfoOutlier = {
  */
 function Outlier() {
     // State to hold user input from the search bar
-    const [userInput, setUserInput] = useState<string>();
+    const [userInput, setUserInput] = useState("");
 
     // Loading state to toggle between skeleton and actual results
     const [loading, setLoading] = useState(false);
@@ -47,6 +47,7 @@ function Outlier() {
      * Sends the query to `/api/outlier` which returns a list of enriched videos.
      */
     const onSearch = async () => {
+        if (!userInput.trim()) return;
         try {
             setLoading(true);
 
@@ -75,17 +76,26 @@ function Outlier() {
                 </div>
 
                 {/* Input + Search Button */}
-                <div className='p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5'>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        onSearch();
+                    }}
+                    className='p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5'
+                >
                     <input
                         type='text'
                         placeholder='Enter any topic to search'
                         className='w-full p-2 outline-none bg-transparent'
+                        value={userInput}
                         onChange={(event) => setUserInput(event.target.value)}
                     />
-                    <Button onClick={onSearch} disabled={loading || !userInput}>
-                        {loading ? <Loader2 className='animate-spin' /> : <Search />} Search
+
+                    <Button type="submit" disabled={loading || !userInput.trim()}>
+                        {loading ? <Loader2 className='animate-spin' /> : <Search />}
+                        Search
                     </Button>
-                </div>
+                </form>
             </div>
 
             {/* Video Grid or Skeleton */}

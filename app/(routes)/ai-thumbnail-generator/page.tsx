@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, ImagePlus, Loader2, User, X } from 'lucide-react';
+import { ArrowUp, ImagePlus, Loader2, User } from 'lucide-react';
 import Image from 'next/image';
 import React, { useState } from 'react';
 import ThumbnailList from './_components/ThumbnailList';
@@ -8,23 +8,24 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 function AiThumbnailGenerator() {
-  const [userInput, setUserInput] = useState<string>();
+  const [userInput, setUserInput] = useState("");
   const [referenceImage, setReferenceImage] = useState<File>();
   const [faceImage, setFaceImage] = useState<File>();
   const [loading, setLoading] = useState(false);
-  const [outputThumbnailImage, setOutputThumbnailImage] = useState('');
+  const [outputThumbnailImage, setOutputThumbnailImage] = useState("");
 
-  // ✅ File Preview
+  // File Preview
   const onHandleFileChange = (field: string, e: any) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
+
     if (field === "referenceImage") setReferenceImage(selectedFile);
     if (field === "faceImage") setFaceImage(selectedFile);
   };
 
-  // ✅ Submit & Generate Thumbnail
+  // Generate Thumbnail
   const onSubmit = async () => {
-    if (!userInput?.trim()) {
+    if (!userInput.trim()) {
       toast.error("Enter your title or description!");
       return;
     }
@@ -38,7 +39,9 @@ function AiThumbnailGenerator() {
       const res = await axios.post("/api/generate-thumbnail", formData);
       setOutputThumbnailImage(res.data.image);
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to generate thumbnail");
+      toast.error(
+        err?.response?.data?.error || "Failed to generate thumbnail"
+      );
     } finally {
       setLoading(false);
     }
@@ -46,12 +49,15 @@ function AiThumbnailGenerator() {
 
   return (
     <div className="px-10 md:px-20 lg:px-40">
+      {/* Header */}
       <div className="flex items-center justify-center mt-5 flex-col gap-2">
         <h2 className="font-bold text-4xl">AI Thumbnail Generator</h2>
-        <p className="text-gray-400 text-center">Create eye-catching AI thumbnails instantly!</p>
+        <p className="text-gray-400 text-center">
+          Create eye-catching AI thumbnails instantly!
+        </p>
       </div>
 
-      {/* ✅ Output */}
+      {/* Output */}
       <div className="mt-6">
         {loading ? (
           <div className="w-full bg-secondary rounded-2xl p-10 h-[250px] flex items-center justify-center gap-2">
@@ -71,30 +77,49 @@ function AiThumbnailGenerator() {
         )}
       </div>
 
-      {/* ✅ Input */}
-      <div className="flex gap-5 items-center p-3 border rounded-xl mt-10 bg-secondary">
+      {/* Input */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+        className="flex gap-5 items-center p-3 border rounded-xl mt-10 bg-secondary"
+      >
         <textarea
           placeholder="Enter your YouTube title or video description"
-          className="w-full outline-0 bg-transparent resize-none"
+          className="w-full outline-none bg-transparent resize-none"
           rows={2}
+          value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
         />
-        <div
-          className="p-3 bg-gradient-to-t from-red-500 to-orange-500 rounded-full cursor-pointer"
-          onClick={onSubmit}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="p-3 bg-gradient-to-t from-red-500 to-orange-500 rounded-full cursor-pointer disabled:opacity-50"
         >
           <ArrowUp />
-        </div>
-      </div>
+        </button>
+      </form>
 
-      {/* ✅ Upload buttons (hidden for now but included) */}
+      {/* Upload Buttons */}
       <div className="mt-3 flex gap-3">
-        <label htmlFor="referenceImageUpload" className="w-full cursor-pointer">
+        <label
+          htmlFor="referenceImageUpload"
+          className="w-full cursor-pointer"
+        >
           <div className="p-4 w-full border rounded-xl bg-secondary flex gap-2 items-center justify-center hover:scale-105 transition-all">
             <ImagePlus />
             <p>Reference Image</p>
           </div>
         </label>
+
         <input
           type="file"
           id="referenceImageUpload"
@@ -102,12 +127,16 @@ function AiThumbnailGenerator() {
           onChange={(e) => onHandleFileChange("referenceImage", e)}
         />
 
-        <label htmlFor="faceImageUpload" className="w-full cursor-pointer">
+        <label
+          htmlFor="faceImageUpload"
+          className="w-full cursor-pointer"
+        >
           <div className="p-4 w-full border rounded-xl bg-secondary flex gap-2 items-center justify-center hover:scale-105 transition-all">
             <User />
             <p>Face Image</p>
           </div>
         </label>
+
         <input
           type="file"
           id="faceImageUpload"

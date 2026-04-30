@@ -6,37 +6,26 @@ import { Loader2, Settings } from "lucide-react";
 import React, { useState } from "react";
 import KeywordsList from "./_components/KeywordsList";
 
-export type Keywords = {
-  keyword: string;
-  score: number;
-  related_queries: string[];
-};
-
-export type SEOKeywordData = {
-  main_keyword: string;
-  keywords: Keywords[];
-  titles: string[];
-};
-
 function TrendingKeywords() {
-  const [userInput, setUserInput] = useState<string>("");
+  const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [keywordsList, setKeywordsList] = useState<SEOKeywordData | undefined>(undefined);
+  const [keywordsList, setKeywordsList] = useState<any>();
 
   const onFind = async () => {
     setKeywordsList(undefined);
     setLoading(true);
 
     try {
-      const result = await axios.get("/api/trending-keywords?query=" + userInput);
+      const result = await axios.get(
+        "/api/trending-keywords?query=" + userInput
+      );
 
       if (result.data.error) {
         console.error(result.data.error);
-        setLoading(false);
         return;
       }
 
-      setKeywordsList(result.data); // directly set the API response
+      setKeywordsList(result.data); // DB response
     } catch (e) {
       console.error(e);
     } finally {
@@ -49,23 +38,30 @@ function TrendingKeywords() {
       <div className="flex items-center justify-center mt-5 flex-col gap-2">
         <h2 className="font-bold text-4xl">YouTube Trending Keywords</h2>
         <p className="text-gray-400 text-center">
-          Discover the latest YouTube trending keywords updated in real-time to
-          boost your content strategy.
+          Discover the latest YouTube trending keywords updated in real-time to boost your content strategy. 
         </p>
       </div>
 
-      <div className="p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onFind();
+        }}
+        className="p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5"
+      >
         <input
           type="text"
-          placeholder="Enter Keywords which you want to find"
+          value={userInput}
+          placeholder="Enter topic or keywords which you want to find"
           className="w-full p-2 outline-none bg-transparent"
-          onChange={(event) => setUserInput(event.target.value)}
+          onChange={(e) => setUserInput(e.target.value)}
         />
-        <Button onClick={onFind} disabled={loading || !userInput}>
+
+        <Button type="submit" disabled={loading || !userInput.trim()}>
           {loading ? <Loader2 className="animate-spin" /> : <Settings />}
           Search
         </Button>
-      </div>
+      </form>
 
       <KeywordsList loading={loading} keywordsList={keywordsList} />
     </div>

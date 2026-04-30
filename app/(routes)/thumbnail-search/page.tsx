@@ -20,11 +20,12 @@ export type VideoInfo = {
 }
 
 function ThumbnailSearch() {
-    const [userInput, setUserInput] = useState<string>();
+    const [userInput, setUserInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [videoList, setVideoList] = useState<VideoInfo[]>();
 
     const onSearch = async () => {
+        if (!userInput.trim()) return;
         setLoading(true)
         const result = await axios.get('/api/thumbnail-search?query=' + userInput);
         console.log(result.data);
@@ -48,14 +49,29 @@ function ThumbnailSearch() {
                     <p className='text-gray-400 text-center '>Discover thumbnails that match your content using smart AI-powered search.
                         Just enter a title or keyword and get visually similar YouTube thumbnails in seconds!</p>
                 </div>
-                <div className=' p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5'>
-                    <input type='text' placeholder='Enter any topic/prompt to search '
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        onSearch();
+                    }}
+                    className='p-2 border rounded-xl flex gap-2 items-center bg-secondary mt-5'
+                >
+                    <input
+                        type='text'
+                        placeholder='Enter any topic/prompt to search'
                         className='w-full p-2 outline-none bg-transparent'
+                        value={userInput}
                         onChange={(event) => setUserInput(event.target.value)}
                     />
-                    <Button onClick={onSearch} disabled={loading || !userInput}>
-                        {loading ? <Loader2 className='animate-spin' /> : <Search />}Search </Button>
-                </div>
+
+                    <Button
+                        type="submit"
+                        disabled={loading || !userInput.trim()}
+                    >
+                        {loading ? <Loader2 className='animate-spin' /> : <Search />}
+                        Search
+                    </Button>
+                </form>
             </div>
 
             <div>
