@@ -1,6 +1,11 @@
-import { openai } from "@/inngest/functions";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+
+// create OpenAI instance here (replace Inngest dependency)
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+});
 
 export async function GET(req: NextRequest) {
 
@@ -9,23 +14,21 @@ export async function GET(req: NextRequest) {
     const thumbnailUrl = searchParams.get('thumbnailUrl');
 
     if (thumbnailUrl) {
-        //AI Model Call
         const completion = await openai.chat.completions.create({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o-mini',
             messages: [
                 {
-                    "role": "user",
-                    "content": [
+                    role: "user",
+                    content: [
                         {
-                            "type": "text",
-                            "text": `Describe this thumbnail in short keywords suitable for searching similar YouTube videos, 
-Give me tags with comm separated. Do not give any comment text, Maximum 5 tags. 
-Make sure after searching that tags will get similer yotuube thumnails`
+                            type: "text",
+                            text: `Describe this thumbnail in short keywords suitable for YouTube search. 
+Give comma-separated tags only. Max 5 tags. No explanation.`
                         },
                         {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": thumbnailUrl
+                            type: "image_url",
+                            image_url: {
+                                url: thumbnailUrl
                             }
                         }
                     ]
@@ -33,23 +36,23 @@ Make sure after searching that tags will get similer yotuube thumnails`
             ]
         });
 
-        const result = completion.choices[0].message.content;
-        query = result;
-
+        query = completion.choices[0].message.content || "";
     }
 
     console.log(query);
-    //Get Youtube Video List API
-    const result = await axios.get(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&videoDuration=long&maxResults=20&key=` + process.env.YOUTUBE_API_KEY)
+
+    const result = await axios.get(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&videoDuration=long&maxResults=20&key=${process.env.YOUTUBE_API_KEY}`
+    );
+
     const searchData = result.data;
     const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
-    console.log(videoIds);
 
-    //Get Youtube Video Detaisl By ID API
-    const videoResult = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`)
+    const videoResult = await axios.get(
+        `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`
+    );
 
-    const videoResultData = videoResult.data;
-    const FinalResult = videoResultData.items.map((item: any) => ({
+    const FinalResult = videoResult.data.items.map((item: any) => ({
         id: item.id,
         title: item.snippet.title,
         description: item.snippet.description,
@@ -59,9 +62,7 @@ Make sure after searching that tags will get similer yotuube thumnails`
         viewCount: item.statistics.viewCount,
         likeCount: item.statistics.likeCount,
         commentCount: item.statistics.commentCount,
+    }));
 
-    }))
-
-    return NextResponse.json(FinalResult)
-
+    return NextResponse.json(FinalResult);
 }
