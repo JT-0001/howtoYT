@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     // Generate Image
     const result = await client.images.generate({
-      model: "dall-e-2",
+      model: "dall-e-3",
       prompt: `Create a visually striking background image suitable for a YouTube thumbnail, based on the topic: "${userInput}". 
 Use only visuals (symbols, objects, characters, scenes) to express the topic — absolutely NO text-based storytelling. 
 Style: bold cinematic lighting, dramatic shadows, high contrast, 3D premium look, dynamic and center-focused composition. 
